@@ -33,7 +33,7 @@ class Book(db.Model):
     owner: so.Mapped[User] = so.relationship(back_populates='books')
 
     def __repr__(self):
-        return '<Post {}>'.format(self.body)
+        return '<Book {}>'.format(self.title)
 
 @login.user_loader
 def load_user(id):

@@ -45,3 +45,9 @@ class EditProfileForm(FlaskForm):
             user = db.session.scalar(sa.select(User).where(User.username == username.data))
             if user is not None:
                 raise ValidationError('Please use a different username')
+
+class AddBookForm(FlaskForm):
+    author = StringField('Author', validators=[DataRequired()])
+    title = StringField('Title', validators=[DataRequired()])
+    submit = SubmitField('Submit')
+

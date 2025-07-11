@@ -2,8 +2,8 @@ from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 import sqlalchemy as sa
 from app import app, db
-from app.models import User
-from app.forms import LoginForm, RegistrationForm, EditProfileForm
+from app.models import User, Book
+from app.forms import LoginForm, RegistrationForm, EditProfileForm, AddBookForm
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 
@@ -57,10 +57,7 @@ def register():
 @login_required
 def user(username):
     user = db.first_or_404(sa.select(User).where(User.username == username))
-    books = [
-            {'author': 'Stephen King', 'title': 'Rose Madder'},
-            {'author': 'Douglas Adams', 'title': 'Hitchhiker Guide'}
-    ]
+    books = db.session.query(Book).filter(Book.user_id == current_user.id)
     return render_template('user.html', user=user, books=books)
 
 @app.before_request
@@ -83,3 +80,16 @@ def edit_profile():
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
     return render_template('edit_profile.html', title='Edit Profile', form=form)
+
+
+@app.route('/add_book', methods=['GET','POST'])
+@login_required
+def add_book():
+    form = AddBookForm()
+    if form.validate_on_submit():
+        book = Book(author=form.author.data, title=form.title.data, owner=current_user)
+        db.session.add(book)
+        db.session.commit()
+        flash('Book created')
+        return redirect(url_for('index'))
+    return render_template('add_book.html', title='Add Book', form=form)
