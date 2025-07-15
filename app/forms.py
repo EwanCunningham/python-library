@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, RadioField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
 import sqlalchemy as sa
 from app import db
@@ -51,3 +51,7 @@ class AddBookForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
+
+class ViewBooksForm(FlaskForm):
+    filter = RadioField('Filter', validators=[DataRequired()], choices=[('my_books_only','Only my books'),('all_books','All books')], default='my_books_only')
+    apply = SubmitField('Apply')

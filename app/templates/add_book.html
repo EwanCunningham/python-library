@@ -19,6 +19,6 @@
             <span style="color: red;">[{{ error }}]</span>
             {% endfor %}
         </p>
-        <p>{{ form.submit() }}</p>
+        <p>{{ form.submit() }} <a href="{{ url_for('view_books') }}"><input type="button" value="Cancel"></a></p>
     </form>
 {% endblock %}

@@ -3,7 +3,7 @@ from flask_login import current_user, login_user, logout_user, login_required
 import sqlalchemy as sa
 from app import app, db
 from app.models import User, Book
-from app.forms import LoginForm, RegistrationForm, EditProfileForm, AddBookForm
+from app.forms import LoginForm, RegistrationForm, EditProfileForm, AddBookForm, ViewBooksForm
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 
@@ -91,5 +91,28 @@ def add_book():
         db.session.add(book)
         db.session.commit()
         flash('Book created')
-        return redirect(url_for('index'))
+        return redirect(url_for('view_books'))
     return render_template('add_book.html', title='Add Book', form=form)
+
+@app.route('/view_books', methods=['GET','POST'])
+@login_required
+def view_books():
+    form = ViewBooksForm()
+    if form.filter.data == 'my_books_only':
+      books = db.session.query(Book).filter(Book.user_id == current_user.id)
+    else:
+      books = db.session.query(Book)
+
+    return render_template('view_books.html', title='View Books', form=form, books=books)
+
+@app.route('/delete_book/<book_id>')
+@login_required
+def delete_book(book_id):
+    book = db.session.scalar(sa.select(Book).where(Book.id == book_id))
+    if book.user_id != current_user.id:
+      flash('Cannot delete a book that you do not own')
+      return redirect(url_for('view_books'))
+    db.session.query(Book).filter(Book.id == book_id).delete()
+    db.session.commit()
+    return redirect(url_for('view_books'))
+
