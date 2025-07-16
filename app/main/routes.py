@@ -1,73 +1,37 @@
 from flask import render_template, flash, redirect, url_for, request
-from flask_login import current_user, login_user, logout_user, login_required
+from flask_login import current_user, login_required
 import sqlalchemy as sa
-from app import app, db, constants
+from app.main import bp
+from app import constants, db
 from app.models import User, Book
-from app.forms import LoginForm, RegistrationForm, EditProfileForm, AddBookForm, ViewBooksForm, EditBookForm
-from urllib.parse import urlsplit
+from app.main.forms import EditProfileForm, AddBookForm, ViewBooksForm, EditBookForm
 from datetime import datetime, timezone
 
-@app.route('/')
-@app.route('/index')
+@bp.route('/')
+@bp.route('/index')
 @login_required
 def index():
 #    return render_template("index.html", title="Home")
     return redirect(url_for('book_list'))
 
-@app.route('/api')
+@bp.route('/api')
 def api():
     return "Hello world!" 
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = db.session.scalar(sa.select(User).where(User.username == form.username.data))
-        if user is None or not user.check_password(form.password.data):
-            flash('Invalid username or password')
-            return redirect(url_for('login'))
-        login_user(user, remember=form.remember_me.data)
-        next_page = request.args.get('next')
-        if not next_page or urlsplit(next_page).netloc != '':
-            next_page = url_for('index')
-        return redirect(next_page)
-    return render_template('login.html', title='Login', form=form)
-
-@app.route('/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('index'))
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
-        user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.commit()
-        flash('Congratulations, you are now a registered user!')
-        return redirect(url_for('login'))
-    return render_template('register.html', title='Register', form=form)
-
-@app.route('/user/<username>')
+@bp.route('/user/<username>')
 @login_required
 def user(username):
     user = db.first_or_404(sa.select(User).where(User.username == username))
     lastseen_datetime = user.last_seen.strftime(constants.DATETIME_FORMAT)
-    return render_template('user.html', user=user, lastseen_datetime=lastseen_datetime)
+    return render_template('main/user.html', user=user, lastseen_datetime=lastseen_datetime)
 
-@app.before_request
+@bp.before_request
 def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
 
-@app.route('/edit_profile', methods=['GET','POST'])
+@bp.route('/edit_profile', methods=['GET','POST'])
 @login_required
 def edit_profile():
     form = EditProfileForm(current_user.username)
@@ -80,10 +44,9 @@ def edit_profile():
     elif request.method == 'GET':
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
-    return render_template('edit_profile.html', title='Edit Profile', form=form)
+    return render_template('main/edit_profile.html', title='Edit Profile', form=form)
 
-
-@app.route('/add_book', methods=['GET','POST'])
+@bp.route('/add_book', methods=['GET','POST'])
 @login_required
 def add_book():
     form = AddBookForm()
@@ -93,9 +56,9 @@ def add_book():
         db.session.commit()
         flash('Book created')
         return redirect(url_for('book_list'))
-    return render_template('add_book.html', title='Add Book', form=form)
+    return render_template('main/add_book.html', title='Add Book', form=form)
 
-@app.route('/book_list', methods=['GET','POST'])
+@bp.route('/book_list', methods=['GET','POST'])
 @login_required
 def book_list():
     form = ViewBooksForm()
@@ -103,16 +66,16 @@ def book_list():
       books = db.session.query(Book).filter(Book.user_id == current_user.id)
     else:
       books = db.session.query(Book)
-    return render_template('book_list.html', title='View Books', form=form, books=books)
+    return render_template('main/book_list.html', title='View Books', form=form, books=books)
 
-@app.route('/book/<book_id>')
+@bp.route('/book/<book_id>')
 @login_required
 def book(book_id):
     book = db.session.scalar(sa.select(Book).where(Book.id == book_id))
     created_datetime = book.timestamp.strftime(constants.DATETIME_FORMAT)
-    return render_template('book.html', book=book, created_datetime=created_datetime)
+    return render_template('main/book.html', book=book, created_datetime=created_datetime)
 
-@app.route('/edit_book/<book_id>', methods=['GET','POST'])
+@bp.route('/edit_book/<book_id>', methods=['GET','POST'])
 @login_required
 def edit_book(book_id):
     book = db.session.scalar(sa.select(Book).where(Book.id == book_id))
@@ -126,9 +89,9 @@ def edit_book(book_id):
     elif request.method == 'GET':
         form.author.data = book.author
         form.title.data = book.title
-    return render_template('edit_book.html', title='Edit Book', form=form, book=book)
+    return render_template('main/edit_book.html', title='Edit Book', form=form, book=book)
 
-@app.route('/delete_book/<book_id>')
+@bp.route('/delete_book/<book_id>')
 @login_required
 def delete_book(book_id):
     book = db.session.scalar(sa.select(Book).where(Book.id == book_id))
@@ -137,5 +100,5 @@ def delete_book(book_id):
       return redirect(url_for('book_list'))
     db.session.query(Book).filter(Book.id == book_id).delete()
     db.session.commit()
-    return redirect(url_for('book_list'))
+    return redirect(url_for('main/book_list'))
 
