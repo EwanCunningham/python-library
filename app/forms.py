@@ -51,6 +51,10 @@ class AddBookForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
+class EditBookForm(FlaskForm):
+    author = StringField('Author', validators=[DataRequired()])
+    title = StringField('Title', validators=[DataRequired()])
+    submit = SubmitField('Submit')
 
 class ViewBooksForm(FlaskForm):
     filter = RadioField('Filter', validators=[DataRequired()], choices=[('my_books_only','Only my books'),('all_books','All books')], default='my_books_only')

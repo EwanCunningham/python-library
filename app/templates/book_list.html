@@ -29,7 +29,10 @@
                    <td>{{ book.author }}</td>
                    <td>{{ book.title }}</td>
                    <td>{{ book.owner.username }}</td>
-		   <td><a href={{ url_for('delete_book', book_id=book.id) }}>delete</a></td>
+		   <td>
+                     <a href={{ url_for('book', book_id=book.id) }}>view</a>
+                     <a href={{ url_for('delete_book', book_id=book.id) }}>delete</a>
+                   </td>
                 </tr>
 	    {% endfor %}
 	  </tbody>

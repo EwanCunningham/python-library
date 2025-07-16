@@ -1,9 +1,9 @@
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 import sqlalchemy as sa
-from app import app, db
+from app import app, db, constants
 from app.models import User, Book
-from app.forms import LoginForm, RegistrationForm, EditProfileForm, AddBookForm, ViewBooksForm
+from app.forms import LoginForm, RegistrationForm, EditProfileForm, AddBookForm, ViewBooksForm, EditBookForm
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 
@@ -11,7 +11,8 @@ from datetime import datetime, timezone
 @app.route('/index')
 @login_required
 def index():
-    return render_template("index.html", title="Home")
+#    return render_template("index.html", title="Home")
+    return redirect(url_for('book_list'))
 
 @app.route('/api')
 def api():
@@ -57,8 +58,8 @@ def register():
 @login_required
 def user(username):
     user = db.first_or_404(sa.select(User).where(User.username == username))
-    books = db.session.query(Book).filter(Book.user_id == current_user.id)
-    return render_template('user.html', user=user, books=books)
+    lastseen_datetime = user.last_seen.strftime(constants.DATETIME_FORMAT)
+    return render_template('user.html', user=user, lastseen_datetime=lastseen_datetime)
 
 @app.before_request
 def before_request():
@@ -91,19 +92,41 @@ def add_book():
         db.session.add(book)
         db.session.commit()
         flash('Book created')
-        return redirect(url_for('view_books'))
+        return redirect(url_for('book_list'))
     return render_template('add_book.html', title='Add Book', form=form)
 
-@app.route('/view_books', methods=['GET','POST'])
+@app.route('/book_list', methods=['GET','POST'])
 @login_required
-def view_books():
+def book_list():
     form = ViewBooksForm()
     if form.filter.data == 'my_books_only':
       books = db.session.query(Book).filter(Book.user_id == current_user.id)
     else:
       books = db.session.query(Book)
+    return render_template('book_list.html', title='View Books', form=form, books=books)
 
-    return render_template('view_books.html', title='View Books', form=form, books=books)
+@app.route('/book/<book_id>')
+@login_required
+def book(book_id):
+    book = db.session.scalar(sa.select(Book).where(Book.id == book_id))
+    created_datetime = book.timestamp.strftime(constants.DATETIME_FORMAT)
+    return render_template('book.html', book=book, created_datetime=created_datetime)
+
+@app.route('/edit_book/<book_id>', methods=['GET','POST'])
+@login_required
+def edit_book(book_id):
+    book = db.session.scalar(sa.select(Book).where(Book.id == book_id))
+    form = EditBookForm()
+    if form.validate_on_submit():
+        book.author = form.author.data
+        book.title = form.title.data
+        db.session.commit()
+        flash('Your changes have been saved')
+        return redirect(url_for('book_list'))
+    elif request.method == 'GET':
+        form.author.data = book.author
+        form.title.data = book.title
+    return render_template('edit_book.html', title='Edit Book', form=form, book=book)
 
 @app.route('/delete_book/<book_id>')
 @login_required
@@ -111,8 +134,8 @@ def delete_book(book_id):
     book = db.session.scalar(sa.select(Book).where(Book.id == book_id))
     if book.user_id != current_user.id:
       flash('Cannot delete a book that you do not own')
-      return redirect(url_for('view_books'))
+      return redirect(url_for('book_list'))
     db.session.query(Book).filter(Book.id == book_id).delete()
     db.session.commit()
-    return redirect(url_for('view_books'))
+    return redirect(url_for('book_list'))
 
