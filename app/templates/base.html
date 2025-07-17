@@ -18,7 +18,7 @@
 	<div class="container-fluid mt-3">
 	  <div class="text-end mx-5">
             {% if current_user.is_anonymous %}
-		<a href="{{ url_for('login') }}">Login</a>
+		<a href="{{ url_for('auth.login') }}">Login</a>
             {% else %}
         	Logged in as <a href="{{ url_for('main.user', username=current_user.username) }}">{{ current_user.username }}</a>
 		<a href="{{ url_for('auth.logout') }}">Logout</a>

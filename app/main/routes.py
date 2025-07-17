@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 @login_required
 def index():
 #    return render_template("index.html", title="Home")
-    return redirect(url_for('book_list'))
+    return redirect(url_for('main.book_list'))
 
 @bp.route('/api')
 def api():
@@ -40,7 +40,7 @@ def edit_profile():
         current_user.about_me = form.about_me.data
         db.session.commit()
         flash('Your changes have been saved')
-        return redirect(url_for('edit_profile'))
+        return redirect(url_for('main.edit_profile'))
     elif request.method == 'GET':
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
@@ -55,7 +55,7 @@ def add_book():
         db.session.add(book)
         db.session.commit()
         flash('Book created')
-        return redirect(url_for('book_list'))
+        return redirect(url_for('main.book_list'))
     return render_template('main/add_book.html', title='Add Book', form=form)
 
 @bp.route('/book_list', methods=['GET','POST'])
@@ -85,7 +85,7 @@ def edit_book(book_id):
         book.title = form.title.data
         db.session.commit()
         flash('Your changes have been saved')
-        return redirect(url_for('book_list'))
+        return redirect(url_for('main.book_list'))
     elif request.method == 'GET':
         form.author.data = book.author
         form.title.data = book.title
@@ -97,8 +97,8 @@ def delete_book(book_id):
     book = db.session.scalar(sa.select(Book).where(Book.id == book_id))
     if book.user_id != current_user.id:
       flash('Cannot delete a book that you do not own')
-      return redirect(url_for('book_list'))
+      return redirect(url_for('main.book_list'))
     db.session.query(Book).filter(Book.id == book_id).delete()
     db.session.commit()
-    return redirect(url_for('main/book_list'))
+    return redirect(url_for('main.book_list'))
 
